@@ -58,7 +58,9 @@ static uint32_t allocate_flag_mask[FLAGS_COUNT / 32] = { 0x000000ff, 0 };
 
 __inline__ static void draw_execute_header(ivl_design_t des)
 {
-      const char*cp = ivl_design_flag(des, "VVP_EXECUTABLE");
+      const char*env_vvp = getenv("VVP_EXECUTABLE");
+      const char*cp = env_vvp != NULL ? env_vvp : ivl_design_flag(des, "VVP_EXECUTABLE");
+
       if (cp) {
 	    const char *extra_args = ivl_design_flag(des, "VVP_EXTRA_ARGS");
 	    if (!extra_args)
