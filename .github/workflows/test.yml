@@ -11,35 +11,30 @@ on:
   workflow_dispatch:
 
 jobs:
-
   lin:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [
-          '20.04'
-        ]
-    runs-on: ubuntu-${{ matrix.os }}
-    name: '🐧 Ubuntu ${{ matrix.os }}'
+    runs-on: ubuntu-latest
+    container: rockylinux:8.9.20231119
+    name: 'Rocky8'
     steps:
-
     - uses: actions/checkout@v3
-
     - name: Install dependencies
       run: |
-        sudo apt update -qq
-        sudo apt install -y make g++ git bison flex gperf libreadline-dev autoconf python3-sphinx
+        dnf install 'dnf-command(config-manager)' -y
+        dnf config-manager --enable powertools -y
+        dnf install -y autoconf flex bison gperf git
+        dnf install -y gcc-c++
+        dnf install -y make
 
     - name: Build, check and install
       run: |
         autoconf
         ./configure --prefix=$PWD/inst
-        make check
+        make check -j
         make install
         tar zcf iverilog.tar.gz inst
 
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.os }} build
+        name: Rocky8-iverilog
         path: iverilog.tar.gz
