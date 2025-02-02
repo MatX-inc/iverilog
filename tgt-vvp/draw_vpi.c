@@ -80,7 +80,7 @@ static int is_fixed_memory_word(ivl_expr_t net)
 static int get_vpi_taskfunc_signal_arg(struct args_info *result,
                                        ivl_expr_t expr)
 {
-      char buffer[4096];
+      char buffer[32768];
 
       switch (ivl_expr_type(expr)) {
 	  case IVL_EX_SIGNAL:
@@ -278,7 +278,7 @@ static void draw_vpi_taskfunc_args(const char*call_string,
 
       struct args_info *args = calloc(parm_count, sizeof(struct args_info));
 
-      char buffer[4096];
+      char buffer[32768];
 
       ivl_parameter_t par;
 
