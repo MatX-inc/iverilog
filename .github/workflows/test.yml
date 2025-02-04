@@ -18,7 +18,7 @@ jobs:
     container: rockylinux:8.9.20231119
     name: 'Rocky8'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
         dnf install 'dnf-command(config-manager)' -y
@@ -33,10 +33,36 @@ jobs:
         ./configure --prefix=$PWD/inst
         make check -j
         make install
-        tar zcf iverilog.tar.gz inst
+        tar czf iverilog.tar.gz inst
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Rocky8-iverilog
+        path: iverilog.tar.gz
+
+  mac:
+    runs-on: macos-latest
+    name: 'macOS'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        brew install autoconf flex bison git make
+        pip3 install --break-system-packages docopt
+
+    - name: Build, check and install
+      run: |
+        export PATH="/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin:$PATH"
+        export CPPFLAGS="-DHAVE_SYS_RESOURCE_H"
+        autoconf
+        ./configure --prefix=$PWD/inst
+        gmake check -j
+        gmake install
+        tar czf iverilog.tar.gz inst
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macOS-iverilog
         path: iverilog.tar.gz
