@@ -6,8 +6,10 @@ on:
     branches:
       - master
       - v12-branch
-  # All pull_requests trigger a retest.
   pull_request:
+    branches:
+      - master
+      - v12-branch
   workflow_dispatch:
 
 jobs:
