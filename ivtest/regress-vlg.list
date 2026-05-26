@@ -1807,6 +1807,7 @@ varrshft		normal			ivltests # variable >> in wire
 varrshft1		normal			ivltests # variable >> in always
 varrshft2		normal			ivltests # variable >> in function
 vcd-dup			normal			ivltests diff=work/vcd-dup.vcd:gold/vcd-dup.vcd.gold:2
+vcd_defname_multi	normal			ivltests diff=work/vcd_defname_multi.vcd:gold/vcd_defname_multi.vcd.gold:2
 vector			normal			ivltests gold=vector.gold
 verify_two_var_delays	normal			ivltests
 vvp_scalar_value	normal			ivltests
