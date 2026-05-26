@@ -1,0 +1,60 @@
+$date
+	Tue May 26 04:16:02 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module top $end
+$var wire 1 ! c $end
+$var wire 1 " b3 $end
+$var wire 1 # b2 $end
+$var wire 1 $ b1 $end
+$var reg 1 % in $end
+$scope module buf1 $end
+$comment defname buffer $end
+$var wire 1 % x $end
+$var wire 1 ! y $end
+$upscope $end
+$scope module inv1 $end
+$comment defname inverter $end
+$var wire 1 % x $end
+$var wire 1 $ y $end
+$upscope $end
+$scope module inv2 $end
+$comment defname inverter $end
+$var wire 1 % x $end
+$var wire 1 # y $end
+$upscope $end
+$scope module inv3 $end
+$comment defname inverter $end
+$var wire 1 % x $end
+$var wire 1 " y $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+0%
+1$
+1#
+1"
+0!
+$end
+#1
+0$
+0#
+0"
+1!
+1%
+#2
+1$
+1#
+1"
+0!
+0%
