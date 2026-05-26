@@ -759,6 +759,22 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 		  name = vpi_get_str(vpiName, item);
 		  fprintf(dump_file, "$scope %s %s $end\n", type, name);
 
+		    /* Emit `$comment defname <type>` so consumers know the
+		     * module type. `$comment` is in the VCD ignore-set, so
+		     * existing tools are unaffected. */
+		  if (item_type == vpiModule) {
+			/* strdup before the second vpi_get_str: both share
+			 * a per-thread buffer. */
+			const char *raw_defname = vpi_get_str(vpiDefName, item);
+			char *defname = raw_defname ? strdup(raw_defname) : NULL;
+			const char *name_now = vpi_get_str(vpiName, item);
+			if (defname && name_now && strcmp(defname, name_now) != 0) {
+			      fprintf(dump_file, "$comment defname %s $end\n",
+			              defname);
+			}
+			free(defname);
+		  }
+
 		  for (i=0; types[i]>0; i++) {
 			vpiHandle hand;
 			vpiHandle argv = vpi_iterate(types[i], item);
@@ -808,6 +824,18 @@ static int draw_scope(vpiHandle item, vpiHandle callh)
       }
 
       fprintf(dump_file, "$scope %s %s $end\n", type, name);
+
+	/* See scan_item: emit `$comment defname <type>` for modules. */
+      if (vpi_get(vpiType, scope) == vpiModule) {
+	    /* See scan_item: strdup before the second vpi_get_str. */
+	    const char *raw_defname = vpi_get_str(vpiDefName, scope);
+	    char *defname = raw_defname ? strdup(raw_defname) : NULL;
+	    const char *name_now = vpi_get_str(vpiName, scope);
+	    if (defname && name_now && strcmp(defname, name_now) != 0) {
+		  fprintf(dump_file, "$comment defname %s $end\n", defname);
+	    }
+	    free(defname);
+      }
 
       return depth;
 }
