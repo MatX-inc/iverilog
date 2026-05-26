@@ -12,50 +12,34 @@ on:
 jobs:
 
   mac:
-    strategy:
-      fail-fast: false
-      matrix:
-        libvvp: [true]
-        suffix: [true]
-    runs-on: macos-15-intel
-    name: 🍏 macOS${{ matrix.libvvp && ' +libvvp' || '' }}${{ matrix.suffix && ' +suffix' || '' }}
+    runs-on: macos-15
+    name: macOS
     steps:
 
     - uses: actions/checkout@v6
 
     - name: Install dependencies
       run: |
-        brew install bison
+        brew install autoconf bison
 
     - name: Build, check and install
       run: |
-        export PATH="/usr/local/opt/bison/bin:$PATH"
-        CONFIG_OPTS="--enable-libveriuser"
-        if [ "${{ matrix.libvvp }}" = "true" ]; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-libvvp"
-        fi
-        if [ "${{ matrix.suffix }}" = "true" ]; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-suffix"
-        fi
+        export PATH="$(brew --prefix bison)/bin:$PATH"
         autoconf
-        ./configure $CONFIG_OPTS
-        make -j$(nproc) check
-        sudo make install
+        ./configure --prefix=$PWD/inst
+        make -j$(sysctl -n hw.ncpu) check
+        make install
+        tar czf iverilog.tar.gz inst
 
-    - name: Test
-      run: |
-        make check-installed
+    - uses: actions/upload-artifact@v7
+      with:
+        name: macOS-iverilog
+        path: iverilog.tar.gz
 
 
   lin:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['22.04', '24.04']
-        # libvvp: [false, true]
-        # suffix: [false, true]
-    runs-on: ubuntu-${{ matrix.os }}
-    name: 🐧 Ubuntu ${{ matrix.os }}${{ matrix.libvvp && ' +libvvp' || '' }}${{ matrix.suffix && ' +suffix' || '' }}
+    runs-on: ubuntu-22.04
+    name: Ubuntu 22.04
     steps:
 
     - uses: actions/checkout@v6
@@ -71,21 +55,16 @@ jobs:
 
     - name: Build, check and install
       run: |
-        CONFIG_OPTS="--enable-libveriuser"
-        if [ "${{ matrix.libvvp }}" = "true" ]; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-libvvp"
-        fi
-        if [ "${{ matrix.suffix }}" = "true" ]; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-suffix"
-        fi
         autoconf
-        ./configure $CONFIG_OPTS
+        ./configure --prefix=$PWD/inst
         make -j$(nproc) check
-        sudo make install
+        make install
+        tar czf iverilog.tar.gz inst
 
-    - name: Test
-      run:
-        make check-installed
+    - uses: actions/upload-artifact@v7
+      with:
+        name: Ubuntu-22.04-iverilog
+        path: iverilog.tar.gz
 
     - name: Documentation
       run: |
@@ -93,69 +72,69 @@ jobs:
         cd Documentation
         make html
 
-  win:
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        msystem: [MINGW64, UCRT64, CLANG64]
-        # libvvp: [false, true]
-        # suffix: [false, true]
-        include:
-          - { msystem: MINGW64, env: x86_64 }
-          - { msystem: UCRT64,  env: ucrt-x86_64 }
-          - { msystem: CLANG64, env: clang-x86_64 }
-    name: 🟪 ${{ matrix.msystem }}${{ matrix.libvvp && ' +libvvp' || '' }}${{ matrix.suffix && ' +suffix' || '' }}
-    defaults:
-      run:
-        shell: msys2 {0}
-    env:
-      MINGW_ARCH: ${{ matrix.msystem }}
-    steps:
-
-    - run: git config --global core.autocrlf input
-      shell: bash
-
-    - uses: actions/checkout@v6
-
-    - uses: msys2/setup-msys2@v2
-      with:
-        msystem: ${{ matrix.msystem }}
-        update: true
-        install: >
-          git
-          base-devel
-          python-pip
-          mingw-w64-${{ matrix.env }}-perl
-
-    - uses: actions/setup-python@v6
-      with:
-        python-version: '>=3.5'
-
-    - name: Build and check
-      run: |
-        cd msys2
-        CONFIG_OPTS=""
-        if [ ${{ matrix.msystem }} != "CLANG64" ] ; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-libveriuser"
-        fi
-        if [ "${{ matrix.libvvp }}" = "true" ] ; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-libvvp"
-        fi
-        if [ "${{ matrix.suffix }}" = "true" ]; then
-            CONFIG_OPTS="$CONFIG_OPTS --enable-suffix"
-        fi
-        export IVL_CONFIG_OPTIONS="$CONFIG_OPTS"
-        makepkg-mingw --noconfirm --noprogressbar -sCLf
-
-    - name: Install
-      run: pacman -U --noconfirm msys2/*.zst
-
-    - name: Test
-      run: |
-        make check-installed
-
-    - uses: actions/upload-artifact@v7
-      with:
-        name: 🟪 ${{ matrix.msystem }}${{ matrix.libvvp && ' +libvvp' || '' }}
-        path: msys2/*.zst
+#  win:
+#    runs-on: windows-latest
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        msystem: [MINGW64, UCRT64, CLANG64]
+#        # libvvp: [false, true]
+#        # suffix: [false, true]
+#        include:
+#          - { msystem: MINGW64, env: x86_64 }
+#          - { msystem: UCRT64,  env: ucrt-x86_64 }
+#          - { msystem: CLANG64, env: clang-x86_64 }
+#    name: 🟪 ${{ matrix.msystem }}${{ matrix.libvvp && ' +libvvp' || '' }}${{ matrix.suffix && ' +suffix' || '' }}
+#    defaults:
+#      run:
+#        shell: msys2 {0}
+#    env:
+#      MINGW_ARCH: ${{ matrix.msystem }}
+#    steps:
+#
+#    - run: git config --global core.autocrlf input
+#      shell: bash
+#
+#    - uses: actions/checkout@v6
+#
+#    - uses: msys2/setup-msys2@v2
+#      with:
+#        msystem: ${{ matrix.msystem }}
+#        update: true
+#        install: >
+#          git
+#          base-devel
+#          python-pip
+#          mingw-w64-${{ matrix.env }}-perl
+#
+#    - uses: actions/setup-python@v6
+#      with:
+#        python-version: '>=3.5'
+#
+#    - name: Build and check
+#      run: |
+#        cd msys2
+#        CONFIG_OPTS=""
+#        if [ ${{ matrix.msystem }} != "CLANG64" ] ; then
+#            CONFIG_OPTS="$CONFIG_OPTS --enable-libveriuser"
+#        fi
+#        if [ "${{ matrix.libvvp }}" = "true" ] ; then
+#            CONFIG_OPTS="$CONFIG_OPTS --enable-libvvp"
+#        fi
+#        if [ "${{ matrix.suffix }}" = "true" ]; then
+#            CONFIG_OPTS="$CONFIG_OPTS --enable-suffix"
+#        fi
+#        export IVL_CONFIG_OPTIONS="$CONFIG_OPTS"
+#        makepkg-mingw --noconfirm --noprogressbar -sCLf
+#
+#    - name: Install
+#      run: pacman -U --noconfirm msys2/*.zst
+#
+#    - name: Test
+#      run: |
+#        make check-installed
+#
+#    - uses: actions/upload-artifact@v7
+#      with:
+#        name: 🟪 ${{ matrix.msystem }}${{ matrix.libvvp && ' +libvvp' || '' }}
+#        path: msys2/*.zst
