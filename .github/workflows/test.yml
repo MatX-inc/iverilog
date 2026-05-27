@@ -36,41 +36,34 @@ jobs:
         name: macOS-iverilog
         path: iverilog.tar.gz
 
-
+   
   lin:
-    runs-on: ubuntu-22.04
-    name: Ubuntu 22.04
+    runs-on: ubuntu-latest
+    container: rockylinux:8.9.20231119
+    name: 'Rocky8'
     steps:
-
-    - uses: actions/checkout@v6
-
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
-        sudo apt update -qq
-        sudo apt install -y make g++ git bison flex gperf libreadline-dev libbz2-dev autoconf python3-venv
-        python3 -m venv .venv
-        . .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r Documentation/requirements.txt
+        dnf install 'dnf-command(config-manager)' -y
+        dnf config-manager --enable powertools -y
+        dnf install -y autoconf flex bison gperf git
+        dnf install -y gcc-c++
+        dnf install -y make
 
     - name: Build, check and install
       run: |
         autoconf
         ./configure --prefix=$PWD/inst
-        make -j$(nproc) check
+        make check -j
         make install
         tar czf iverilog.tar.gz inst
 
-    - uses: actions/upload-artifact@v7
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: Ubuntu-22.04-iverilog
+        name: Rocky8-iverilog
         path: iverilog.tar.gz
-
-    - name: Documentation
-      run: |
-        . .venv/bin/activate
-        cd Documentation
-        make html
 
 #  win:
 #    runs-on: windows-latest
