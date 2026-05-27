@@ -25,6 +25,9 @@ jobs:
     - name: Build, check and install
       run: |
         export PATH="$(brew --prefix bison)/bin:$PATH"
+        # v12 main.cc defines its own `struct rusage` unless this is set;
+        # without it, macOS SDK's <sys/resource.h> collision breaks the build.
+        export CPPFLAGS="-DHAVE_SYS_RESOURCE_H"
         autoconf
         ./configure --prefix=$PWD/inst
         make -j$(sysctl -n hw.ncpu) check
