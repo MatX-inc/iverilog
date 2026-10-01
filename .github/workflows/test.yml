@@ -264,7 +264,7 @@ jobs:
         test "$(uname -m)" = x86_64
         dnf install -y 'dnf-command(config-manager)'
         dnf config-manager --enable powertools -y
-        dnf install -y autoconf flex bison gperf git gcc-c++ make perl bzip2-devel python39 python39-pip
+        dnf install -y autoconf flex bison gperf git gcc-c++ make perl bzip2-devel zlib-devel python39 python39-pip
         python3.9 -m venv "$PWD/.release-venv"
 
     - name: Build, test and package
