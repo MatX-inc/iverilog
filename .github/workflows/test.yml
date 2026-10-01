@@ -221,3 +221,65 @@ jobs:
       with:
         name: 🪟 ${{ matrix.msystem }}${{ matrix.libvvp && ' +libvvp' || '' }}
         path: msys2/*.zst
+
+  release-macos-arm64:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    name: Release macOS ARM64
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Install dependencies
+      run: |
+        test "$(uname -m)" = arm64
+        brew install autoconf bison
+        python3 -c 'import sys; assert sys.version_info >= (3, 8)'
+
+    - name: Build, test and package
+      run: |
+        export PATH="$(brew --prefix bison)/bin:$PWD/inst/bin:$PATH"
+        autoconf
+        ./configure --prefix="$PWD/inst" --enable-libveriuser
+        make -j$(sysctl -n hw.ncpu) check
+        make install
+        make check-installed
+        tar czf iverilog.tar.gz inst
+
+    - uses: actions/upload-artifact@v7
+      with:
+        name: macOS-iverilog
+        path: iverilog.tar.gz
+        if-no-files-found: error
+
+  release-rocky8:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    container: rockylinux:8.9.20231119
+    name: Release Rocky 8 x86_64
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        test "$(uname -m)" = x86_64
+        dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --enable powertools -y
+        dnf install -y autoconf flex bison gperf git gcc-c++ make perl bzip2-devel python39 python39-pip
+        python3.9 -m venv "$PWD/.release-venv"
+
+    - name: Build, test and package
+      run: |
+        export PATH="$PWD/.release-venv/bin:$PWD/inst/bin:$PATH"
+        python3 -c 'import sys; assert sys.version_info >= (3, 8)'
+        autoconf
+        ./configure --prefix="$PWD/inst" --enable-libveriuser
+        make -j$(nproc) check
+        make install
+        make check-installed
+        tar czf iverilog.tar.gz inst
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Rocky8-iverilog
+        path: iverilog.tar.gz
+        if-no-files-found: error
