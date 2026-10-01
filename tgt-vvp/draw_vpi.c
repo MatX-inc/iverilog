@@ -21,6 +21,7 @@
 # include  <string.h>
 # include  <stdlib.h>
 # include  <assert.h>
+# include  <stdint.h>
 # include  "ivl_alloc.h"
 
 struct args_info {
@@ -315,21 +316,28 @@ static void draw_vpi_taskfunc_args(const char*call_string,
 		case IVL_EX_NUMBER: {
 		  if (( par = ivl_expr_parameter(expr) )) {
 			snprintf(buffer, sizeof buffer, "P_%p", par);
+			args[idx].text = strdup(buffer);
 		  } else {
 			unsigned bit, wid = ivl_expr_width(expr);
 			const char*bits = ivl_expr_bits(expr);
 			char*dp;
+			size_t prefix_len;
 
 			snprintf(buffer, sizeof buffer, "%u'%sb",
 			         wid, ivl_expr_signed(expr)? "s" : "");
-			dp = buffer + strlen(buffer);
+			prefix_len = strlen(buffer);
+			if (wid > SIZE_MAX - prefix_len - 1) {
+			      fprintf(stderr, "%s:%u: VPI argument is too wide to render.\n",
+			                      ivl_expr_file(expr), ivl_expr_lineno(expr));
+			      exit(1);
+			}
+			args[idx].text = malloc(prefix_len + (size_t)wid + 1);
+			memcpy(args[idx].text, buffer, prefix_len);
+			dp = args[idx].text + prefix_len;
 			for (bit = wid ;  bit > 0 ;  bit -= 1)
 			      *dp++ = bits[bit-1];
-			*dp++ = 0;
-			assert(dp >= buffer);
-			assert((unsigned)(dp - buffer) <= sizeof buffer);
+			*dp = 0;
 		  }
-		  args[idx].text = strdup(buffer);
 		  continue;
 		}
 

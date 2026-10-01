@@ -50,6 +50,8 @@ check-installed-vvp:
 	cd $(abs_srcdir); perl vvp_reg.pl $(opts)
 
 check-installed-vvp-py:
+	@echo "Running vvp_executable_test.py"
+	cd $(abs_srcdir); python3 vvp_executable_test.py $(opts)
 	@echo "Running vvp_reg.py"
 	cd $(abs_srcdir); python3 vvp_reg.py $(opts)
 
