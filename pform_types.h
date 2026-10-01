@@ -38,6 +38,7 @@
  */
 
 class Design;
+class LexicalScope;
 class NetScope;
 class Definitions;
 class PExpr;
@@ -191,6 +192,10 @@ class data_type_t : public PNamedItem {
       virtual void pform_dump(std::ostream&out, unsigned indent) const;
       virtual std::ostream& debug_dump(std::ostream&out) const;
 
+      // Relocate expressions in an owned inline type used by a bind actual.
+      // Named references relocate their identifier, not the referenced type.
+      virtual void relocate_for_bind(LexicalScope*scope);
+
       ivl_type_t elaborate_type(Design*des, NetScope*scope);
 
       virtual SymbolType symbol_type() const override;
@@ -229,6 +234,8 @@ struct type_identifier_t : public data_type_t {
       explicit type_identifier_t(PEIdent *identifier);
       ~type_identifier_t() override;
 
+      void relocate_for_bind(LexicalScope*scope) override;
+
       ivl_type_t elaborate_type_raw(Design *des, NetScope *scope) const override;
 
       std::ostream& debug_dump(std::ostream&out) const override;
@@ -265,6 +272,8 @@ struct enum_name_t : public PNamedItem {
 struct enum_type_t : public data_type_t {
       explicit enum_type_t(data_type_t *btype) : base_type(btype) { }
 
+      void relocate_for_bind(LexicalScope*scope) override;
+
 	// Return the elaborated version of the type.
       ivl_type_t elaborate_type_raw(Design*des, NetScope*scope) const override;
 
@@ -281,6 +290,8 @@ struct struct_member_t : public LineInfo {
 };
 
 struct struct_type_t : public data_type_t {
+      void relocate_for_bind(LexicalScope*scope) override;
+
       virtual void pform_dump(std::ostream&out, unsigned indent) const override;
       ivl_type_t elaborate_type_raw(Design*des, NetScope*scope) const override;
 
@@ -332,6 +343,8 @@ struct vector_type_t : public data_type_t {
       inline explicit vector_type_t(ivl_variable_type_t bt, bool sf,
 				    std::list<pform_range_t>*pd)
       : base_type(bt), signed_flag(sf), integer_flag(false), implicit_flag(false), pdims(pd) { }
+      void relocate_for_bind(LexicalScope*scope) override;
+
       virtual void pform_dump(std::ostream&out, unsigned indent) const override;
       virtual std::ostream& debug_dump(std::ostream&out) const override;
       ivl_type_t elaborate_type_raw(Design*des, NetScope*scope) const override;
@@ -347,6 +360,8 @@ struct array_base_t : public data_type_t {
     public:
       inline explicit array_base_t(data_type_t*btype, std::list<pform_range_t>*pd)
       : base_type(btype), dims(pd) { }
+
+      void relocate_for_bind(LexicalScope*scope) override;
 
       std::unique_ptr<data_type_t> base_type;
       std::unique_ptr< std::list<pform_range_t> > dims;

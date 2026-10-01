@@ -493,3 +493,27 @@ change the "data.hex" file to contain different data. This technique is also
 common for simulating algorithms that take in larger data sets. One can extend
 this idea slightly by using a "$value$plusargs" statement to select the file
 to read.
+
+
+SystemVerilog module-type bind
+=============================
+
+A compilation-unit ``bind`` directive can attach an ordinary module to every
+instance of another module, without editing the target's source. For example::
+
+    bind dut_module x_checker #(.WIDTH(WIDTH)) check_x(.value(internal_value));
+
+The bound module's parameters and port actuals are evaluated in each target
+instance. Target-local declarations are visible regardless of source-file
+order. Named and positional connections, ``.*``, and bound instance arrays
+are supported. The checker module name is resolved as a compilation-unit
+module type. Bound checkers are excluded from automatic root selection just
+like ordinary instantiated modules; ``-s`` can select the intended design root.
+
+Supply target, checker, and bind sources explicitly, using ordinary source
+arguments or ``-l`` library-source arguments. Lazy ``-y`` discovery of a bind
+directive or of a bind target/checker is not supported. This implementation
+rejects contained directives, instance-path and instance-list targets,
+interface/program targets or bound types, binds beneath another bound instance,
+and inline enum declarations in bind actuals. Named target-scope types can be
+used instead of declaring an enum in the directive.

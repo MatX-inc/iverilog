@@ -494,6 +494,19 @@ extern void pform_make_modgates(const struct vlltype&loc,
 				std::vector<lgate>*gates,
 				std::list<named_pexpr_t>*attr);
 
+
+/* Collect a compilation-unit module-type bind for resolution after all
+   explicit source files (including -l library sources) have been parsed. */
+extern void pform_start_bind();
+extern void pform_end_bind();
+extern void pform_check_bind_import(const LineInfo&loc, LexicalScope*scope,
+                                    perm_string name);
+extern void pform_bind_directive(const struct vlltype&loc,
+                                pform_name_t*target,
+                                perm_string type,
+                                struct parmvalue_t*overrides,
+                                std::vector<lgate>*gates);
+
 /* Make a continuous assignment node, with optional bit- or part- select. */
 extern void pform_make_pgassign_list(const struct vlltype&loc,
 				     std::list<PExpr*>*alist,

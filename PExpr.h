@@ -73,6 +73,10 @@ class PExpr : public LineInfo {
 
       virtual void dump(std::ostream&) const;
 
+        // A compilation-unit bind is elaborated at the end of its target
+        // module, independently of the directive's source position.
+      virtual void relocate_for_bind(LexicalScope*scope);
+
         // This method tests whether the expression contains any identifiers
         // that have not been previously declared in the specified scope or
         // in any containing scope. Any such identifiers are added to the
@@ -222,6 +226,8 @@ std::ostream& operator << (std::ostream&, const PExpr&);
 
 class PEAssignPattern : public PExpr {
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PEAssignPattern();
       explicit PEAssignPattern(const std::list<PExpr*>&p);
       ~PEAssignPattern() override;
@@ -263,6 +269,8 @@ class PEAssignPattern : public PExpr {
 class PEConcat : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PEConcat(const std::list<PExpr*>&p, PExpr*r =0);
       ~PEConcat() override;
 
@@ -316,6 +324,8 @@ class PEConcat : public PExpr {
 class PEEvent : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       enum edge_t {ANYEDGE, POSEDGE, NEGEDGE, EDGE, POSITIVE};
 
 	// Use this constructor to create events based on edges or levels.
@@ -363,6 +373,8 @@ class PEFNumber : public PExpr {
 class PEIdent : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PEIdent(perm_string, unsigned lexical_pos, bool no_implicit_sig=false);
       explicit PEIdent(const pform_scoped_name_t&name);
       explicit PEIdent(const pform_name_t&, unsigned lexical_pos,
@@ -609,6 +621,8 @@ class PEIdent : public PExpr {
 class PENewArray : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PENewArray (PExpr*s, PExpr*i);
       ~PENewArray() override;
 
@@ -629,6 +643,8 @@ class PENewArray : public PExpr {
 class PENewClass : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
 	// New without (or with default) constructor
       explicit PENewClass ();
 	// New with constructor arguments
@@ -660,6 +676,8 @@ class PENewClass : public PExpr {
 
 class PENewCopy : public PExpr {
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PENewCopy(PExpr*src);
       ~PENewCopy() override;
 
@@ -760,6 +778,8 @@ class PEString : public PExpr {
 
 class PETypename : public PExpr {
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PETypename(data_type_t*data_type);
       ~PETypename() override;
 
@@ -781,6 +801,8 @@ class PETypename : public PExpr {
 class PEUnary : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PEUnary(char op, PExpr*ex);
       ~PEUnary() override;
 
@@ -812,6 +834,8 @@ class PEUnary : public PExpr {
 class PEBinary : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PEBinary(char op, PExpr*l, PExpr*r);
       ~PEBinary() override;
 
@@ -936,6 +960,8 @@ class PEBShift  : public PEBLeftWidth {
 class PETernary : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PETernary(PExpr*e, PExpr*t, PExpr*f);
       ~PETernary() override;
 
@@ -970,6 +996,8 @@ class PETernary : public PExpr {
  */
 class PECallFunction : public PExpr {
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PECallFunction(const pform_name_t &n, const std::vector<named_pexpr_t> &parms);
 	// Call a function with a scoped name.
       explicit PECallFunction(const pform_scoped_name_t &n,
@@ -1087,6 +1115,8 @@ class PECallFunction : public PExpr {
 class PECast : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PECast(PExpr *target, PExpr *base);
       ~PECast() override = default;
 
@@ -1149,6 +1179,8 @@ class PECast : public PExpr {
 class PECastSign : public PExpr {
 
     public:
+      void relocate_for_bind(LexicalScope*scope) override;
+
       explicit PECastSign(bool signed_flag, PExpr *base);
       ~PECastSign() override = default;
 

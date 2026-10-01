@@ -1442,6 +1442,17 @@ void delayed_elaborate_scope_mod_instances::elaborate_runrun()
  */
 void PGModule::elaborate_scope_mod_(Design*des, Module*mod, NetScope*sc) const
 {
+      if (is_bind_instance_) {
+            for (const NetScope*parent = sc; parent; parent = parent->parent()) {
+                  if (!parent->created_by_bind()) continue;
+                  cerr << get_fileline()
+                       << ": error: A bind instantiation cannot occur below"
+                       << " another bound instance." << endl;
+                  des->errors += 1;
+                  return;
+            }
+      }
+
       if (get_name() == "") {
 	    cerr << get_fileline() << ": error: Instantiation of module "
 		 << mod->mod_name() << " requires an instance name." << endl;
@@ -1587,6 +1598,7 @@ void PGModule::elaborate_scope_mod_instances_(Design*des, Module*mod, NetScope*s
 	    my_scope->set_line(get_file(), mod->get_file(),
 	                       get_lineno(), mod->get_lineno());
 	    my_scope->set_module_name(mod->mod_name());
+	    my_scope->created_by_bind(is_bind_instance_);
 	    my_scope->add_imports(&mod->explicit_imports);
 
 	    for (unsigned adx = 0 ;  adx < attrib_list_n ;  adx += 1)

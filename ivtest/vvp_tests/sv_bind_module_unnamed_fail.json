@@ -1,0 +1,9 @@
+{
+    "type": "CE",
+    "source": "sv_bind_module_unnamed_fail.v",
+    "iverilog-args": [
+        "-g2012",
+        "-stest"
+    ],
+    "gold": "sv_bind_module_unnamed_fail"
+}

@@ -1229,6 +1229,7 @@ Module::port_t *module_declare_interface_port(const YYLTYPE&loc, char *type,
  /* The new tokens from 1800-2005. */
 %token K_alias K_always_comb K_always_ff K_always_latch K_assert
 %token K_assume K_before K_bind K_bins K_binsof K_bit K_break K_byte
+%destructor { pform_end_bind(); } bind_start
 %token K_chandle K_class K_clocking K_const K_constraint K_context
 %token K_continue K_cover K_covergroup K_coverpoint K_cross K_dist K_do
 %token K_endclass K_endclocking K_endgroup K_endinterface K_endpackage
@@ -2141,6 +2142,7 @@ description /* IEEE1800-2005: A.1.2 */
   | package_declaration
   | discipline_declaration
   | package_item
+  | bind_directive
   | KK_attribute '(' IDENTIFIER ',' STRING ',' STRING ')'
       { perm_string tmp3 = lex_strings.make($3);
 	pform_set_type_attrib(tmp3, $5, $7);
@@ -2154,6 +2156,38 @@ description /* IEEE1800-2005: A.1.2 */
 description_list
   : description
   | description_list description
+  ;
+
+
+  /* This implementation supports compilation-unit binds to module types.
+     Parse a hierarchical target so unsupported instance forms have a focused
+     diagnostic instead of being mistaken for a module-type bind. */
+bind_start
+  : K_bind { pform_start_bind(); }
+  ;
+
+bind_directive
+  : bind_start hierarchy_identifier IDENTIFIER gate_instance_list ';'
+      { pform_bind_directive(@1, $2, lex_strings.make($3), nullptr, $4);
+        delete[] $3;
+      }
+  | bind_start hierarchy_identifier IDENTIFIER parameter_value_assignment gate_instance_list ';'
+      { pform_bind_directive(@1, $2, lex_strings.make($3), $4, $5);
+        delete[] $3;
+      }
+  | bind_start IDENTIFIER ':' error ';'
+      { yyerror(@1, "sorry: bind target instance lists are not supported; "
+                   "use a compilation-unit module-type bind.");
+        delete[] $2;
+        pform_end_bind();
+        yyerrok;
+      }
+  | bind_start error ';'
+      { yyerror(@1, "sorry: unsupported bind directive; supported syntax is "
+                   "bind <module_type> <checker_module> [#(...)] <instance> (...);");
+        pform_end_bind();
+        yyerrok;
+      }
   ;
 
 
@@ -5753,6 +5787,7 @@ module_item
 
   /* Modules can contain further sub-module definitions. */
   : module
+  | bind_directive
 
   /* Very similar to the rule above, but this takes a list of
      net_decl_assigns, which are <name> = <expr> assignment

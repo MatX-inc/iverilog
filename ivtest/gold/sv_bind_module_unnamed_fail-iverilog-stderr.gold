@@ -1,0 +1,1 @@
+ivltests/sv_bind_module_unnamed_fail.v:3: error: A bound instance must have a name.

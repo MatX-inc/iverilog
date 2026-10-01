@@ -342,6 +342,12 @@ extern int VLparse();
      allow nested module definitions. */
 static list<Module*>pform_cur_module;
 
+// Bind actuals belong to the target's scope, not the parser's current unit.
+static bool parsing_bind_actuals = false;
+void pform_start_bind() { parsing_bind_actuals = true; }
+void pform_end_bind() { parsing_bind_actuals = false; }
+
+
 bool pform_library_flag = false;
 
 /*
@@ -519,6 +525,7 @@ void pform_pop_block_scope(bool keep_scope)
 
 static void check_potential_imports(const struct vlltype&loc, perm_string name, bool tf_call)
 {
+      if (parsing_bind_actuals) return;
       LexicalScope*scope = lexical_scope;
       while (scope) {
 	    if (scope->local_symbols.find(name) != scope->local_symbols.end())
@@ -529,6 +536,21 @@ static void check_potential_imports(const struct vlltype&loc, perm_string name, 
 		  return;
 
 	    scope = scope->parent_scope();
+      }
+}
+
+void pform_check_bind_import(const LineInfo&li, LexicalScope*scope,
+                            perm_string name)
+{
+      vlltype loc = {};
+      loc.first_line = loc.last_line = li.get_lineno();
+      loc.text = li.get_file();
+      loc.lexical_pos = UINT_MAX;
+      for (; scope; scope = scope->parent_scope()) {
+            if (scope->local_symbols.count(name) ||
+                scope->explicit_imports.count(name)) return;
+            // Every target declaration is now known, including functions.
+            if (pform_find_potential_import(loc, scope, name, false, true)) return;
       }
 }
 
@@ -852,6 +874,14 @@ static void pform_put_wire_in_scope(perm_string name, PWire*net)
 
 void pform_put_enum_type_in_scope(enum_type_t*enum_set)
 {
+      if (parsing_bind_actuals) {
+            cerr << enum_set->get_fileline()
+                 << ": sorry: inline enum declarations in bind actuals are "
+                 << "not supported; use a named target-scope type." << endl;
+            error_count += 1;
+            return;
+      }
+
       if (std::find(lexical_scope->enum_sets.begin(),
 		    lexical_scope->enum_sets.end(), enum_set) !=
           lexical_scope->enum_sets.end())
@@ -2589,6 +2619,159 @@ void pform_make_modgates(const struct vlltype&loc,
       delete gates;
 }
 
+/*
+ * Module-type binds are instantiations in the target definition, so normal
+ * elaboration specializes their expressions separately for every instance.
+ * Keep them pending until all explicitly supplied source files are parsed:
+ * neither source order nor a -l library flag changes target visibility.
+ */
+struct pending_bind_t {
+      LineInfo li;
+      perm_string target;
+      perm_string type;
+      struct parmvalue_t*overrides;
+      std::vector<lgate> gates;
+};
+static vector<pending_bind_t> pending_binds;
+static bool bind_parsing_finished = false;
+
+void pform_bind_directive(const struct vlltype&loc,
+                          pform_name_t*target,
+                          perm_string type,
+                          struct parmvalue_t*overrides,
+                          std::vector<lgate>*gates)
+{
+      pform_end_bind();
+      const char*unsupported = nullptr;
+      if (!pform_cur_module.empty()) {
+            unsupported = "contained bind directives are not supported; "
+                          "place a module-type bind at compilation-unit scope";
+      } else if (bind_parsing_finished) {
+            unsupported = "bind directives in lazily loaded libraries are not "
+                          "supported; supply the source explicitly with -l";
+      } else if (target->size() != 1 || !target->front().index.empty()) {
+            unsupported = "bind instance targets are not supported; "
+                          "use a module-type target";
+      }
+      if (unsupported) {
+            cerr << loc << ": sorry: " << unsupported << "." << endl;
+            error_count += 1;
+            delete target;
+            delete gates;
+            return;
+      }
+
+      pending_bind_t bind;
+      FILE_NAME(&bind.li, loc);
+      bind.target = target->front().name;
+      bind.type = type;
+      bind.overrides = overrides;
+      bind.gates.swap(*gates);
+      pending_binds.push_back(bind);
+      delete target;
+      delete gates;
+}
+
+static void pform_apply_binds()
+{
+      for (auto&bind : pending_binds) {
+            auto target = pform_modules.find(bind.target);
+            if (target == pform_modules.end()) {
+                  cerr << bind.li.get_fileline() << ": error: bind target module '"
+                       << bind.target << "' is not defined in the supplied sources."
+                       << endl;
+                  error_count += 1;
+                  continue;
+            }
+            auto checker = pform_modules.find(bind.type);
+            if (checker == pform_modules.end()) {
+                  cerr << bind.li.get_fileline() << ": error: bound module '"
+                       << bind.type << "' is not defined in the supplied sources."
+                       << endl;
+                  error_count += 1;
+                  continue;
+            }
+            if (target->second->is_interface || target->second->program_block ||
+                checker->second->is_interface || checker->second->program_block) {
+                  cerr << bind.li.get_fileline()
+                       << ": sorry: bind targets and bound instances must be "
+                       << "ordinary modules in this implementation." << endl;
+                  error_count += 1;
+                  continue;
+            }
+            if (target->second == checker->second) {
+                  cerr << bind.li.get_fileline()
+                       << ": error: A module cannot be bound into itself." << endl;
+                  error_count += 1;
+                  continue;
+            }
+
+            for (auto&instance : bind.gates) {
+                  if (instance.name.empty()) {
+                        cerr << bind.li.get_fileline()
+                             << ": error: A bound instance must have a name." << endl;
+                        error_count += 1;
+                        continue;
+                  }
+                  perm_string name = lex_strings.make(instance.name);
+                  PGModule*gate;
+                  if (instance.parms_by_name) {
+                        unsigned count = instance.parms_by_name->size();
+                        named_pexpr_t*pins = new named_pexpr_t[count];
+                        std::copy(instance.parms_by_name->begin(),
+                                  instance.parms_by_name->end(), pins);
+                        for (unsigned idx = 0; idx < count; ++idx) {
+                              pins[idx].lexical_pos(UINT_MAX);
+                              if (pins[idx].parm)
+                                    pins[idx].parm->relocate_for_bind(target->second);
+                        }
+                        gate = new PGModule(bind.type, name, pins, count);
+                  } else {
+                        auto*pins = instance.parms
+                              ? new list<PExpr*>(*instance.parms) : new list<PExpr*>;
+                        if (pins->size() == 1 && !pins->front()) pins->clear();
+                        for (auto*pin : *pins)
+                              if (pin) pin->relocate_for_bind(target->second);
+                        gate = new PGModule(bind.type, name, pins);
+                  }
+                  gate->set_line(instance);
+                  gate->lexical_pos(UINT_MAX);
+                  gate->mark_bind_instance();
+                  gate->set_ranges(instance.ranges);
+                  if (instance.ranges) {
+                        for (auto&range : *instance.ranges) {
+                              if (range.first) range.first->relocate_for_bind(target->second);
+                              if (range.second) range.second->relocate_for_bind(target->second);
+                        }
+                  }
+                  if (bind.overrides && bind.overrides->by_name) {
+                        unsigned count = bind.overrides->by_name->size();
+                        named_pexpr_t*parms = new named_pexpr_t[count];
+                        std::copy(bind.overrides->by_name->begin(),
+                                  bind.overrides->by_name->end(), parms);
+                        for (unsigned idx = 0; idx < count; ++idx)
+                              if (parms[idx].parm)
+                                    parms[idx].parm->relocate_for_bind(target->second);
+                        gate->set_parameters(parms, count);
+                  } else if (bind.overrides && bind.overrides->by_order) {
+                        for (auto*parm : *bind.overrides->by_order)
+                              if (parm) parm->relocate_for_bind(target->second);
+                        gate->set_parameters(bind.overrides->by_order);
+                  }
+                  // A bind's actuals must not create implicit nets in either
+                  // the directive's compilation unit or its target module.
+                  // Validate the shared module namespace before adding a gate.
+                  if (!pform_check_local_symbol(target->second, name, gate)) {
+                        delete gate;
+                        continue;
+                  }
+                  target->second->local_symbols[name] = gate;
+                  target->second->add_gate(gate);
+            }
+      }
+      pending_binds.clear();
+}
+
 static PGAssign* pform_make_pgassign(PExpr*lval, PExpr*rval,
 			      list<PExpr*>*del,
 			      struct str_pair_t str)
@@ -3675,10 +3858,14 @@ int pform_parse(const char*path)
       return error_count;
 }
 
-void pform_finish()
+int pform_finish()
 {
-      // Wait until all parsing is done and all symbols in the unit scope are
-      // known before importing possible imports.
+      // Parse errors have already been returned by pform_parse. Report only
+      // additional errors from the post-parse import and bind passes.
+      error_count = 0;
       for (auto unit : pform_units)
 	    pform_check_possible_imports(unit);
+      pform_apply_binds();
+      bind_parsing_finished = true;
+      return error_count;
 }

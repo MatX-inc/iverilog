@@ -1200,6 +1200,11 @@ class NetScope : public Definitions, public Attrib {
       void is_cell(bool is_cell__) { is_cell_ = is_cell__; };
       bool is_cell() const { return is_cell_; };
 
+        // Used to reject a bind nested below another bound instance.
+      void created_by_bind(bool value) { created_by_bind_ = value; }
+      bool created_by_bind() const { return created_by_bind_; }
+
+
 	/* Is there a call to a system task in this scope. */
       void calls_sys_task(bool calls_stask__) { calls_stask_ = calls_stask__; };
       bool calls_sys_task() const { return calls_stask_; };
@@ -1434,6 +1439,7 @@ class NetScope : public Definitions, public Attrib {
 
       unsigned lcounter_;
       bool need_const_func_, is_const_func_, is_auto_, is_cell_, calls_stask_;
+      bool created_by_bind_ = false;
 
       /* Final procedures sets this to notify statements that
 	 they are part of a final procedure. */

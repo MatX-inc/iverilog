@@ -1,0 +1,8 @@
+{
+    "type": "normal",
+    "source": "sv_bind_module_inactive.v",
+    "iverilog-args": [
+        "-g2012",
+        "-sbind_inactive_top"
+    ]
+}

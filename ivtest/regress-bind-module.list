@@ -1,0 +1,26 @@
+# Compilation-unit module-type bind regressions.
+sv_bind_module_before	normal,-g2012,-sbind_module_top	ivltests
+sv_bind_module_after	normal,-g2012,-sbind_module_top	ivltests
+sv_bind_module_auto_root	normal,-g2012	ivltests
+sv_bind_module_library_sources	normal,-g2012,-sbind_module_top,-livltests/sv_bind_module_library.v	ivltests
+sv_bind_module_imports	normal,-g2012,-sbind_import_top	ivltests
+sv_bind_module_shadow	normal,-g2012,-sbind_shadow_top	ivltests
+sv_bind_module_x	normal,-g2012,-sbind_x_top	ivltests
+sv_bind_module_array	normal,-g2012,-sbind_array_top	ivltests
+sv_bind_module_inactive	normal,-g2012,-sbind_inactive_top	ivltests
+sv_bind_module_unknown_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_missing_checker_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_contained_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_instance_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_self_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_collision_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_duplicate_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_interface_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_bad_signal_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_nested_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_nested_reversed_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_list_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_late_library_fail	CE,-g2012,-stest,-yivltests	ivltests
+sv_bind_module_unnamed_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_enum_fail	CE,-g2012,-stest	ivltests
+sv_bind_module_transitive_fail	CE,-g2012,-stest	ivltests

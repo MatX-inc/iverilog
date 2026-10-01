@@ -27,6 +27,66 @@ data_type_t::~data_type_t()
 {
 }
 
+void data_type_t::relocate_for_bind(LexicalScope*)
+{
+      lexical_pos(UINT_MAX);
+}
+
+static void relocate_bind_dimensions(std::list<pform_range_t>&dims,
+                                     LexicalScope*scope)
+{
+      for (auto&range : dims) {
+            if (range.first) range.first->relocate_for_bind(scope);
+            if (range.second) range.second->relocate_for_bind(scope);
+      }
+}
+
+void type_identifier_t::relocate_for_bind(LexicalScope*scope)
+{
+      data_type_t::relocate_for_bind(scope);
+      if (identifier_) identifier_->relocate_for_bind(scope);
+}
+
+void vector_type_t::relocate_for_bind(LexicalScope*scope)
+{
+      data_type_t::relocate_for_bind(scope);
+      if (pdims) relocate_bind_dimensions(*pdims, scope);
+}
+
+void array_base_t::relocate_for_bind(LexicalScope*scope)
+{
+      data_type_t::relocate_for_bind(scope);
+      if (base_type) base_type->relocate_for_bind(scope);
+      if (dims) relocate_bind_dimensions(*dims, scope);
+}
+
+void enum_type_t::relocate_for_bind(LexicalScope*scope)
+{
+      data_type_t::relocate_for_bind(scope);
+      if (base_type) base_type->relocate_for_bind(scope);
+      if (names) {
+            for (auto&name : *names)
+                  if (name.parm) name.parm->relocate_for_bind(scope);
+      }
+}
+
+void struct_type_t::relocate_for_bind(LexicalScope*scope)
+{
+      data_type_t::relocate_for_bind(scope);
+      if (!members) return;
+
+      for (auto*member : *members) {
+            if (!member) continue;
+            if (member->type) member->type->relocate_for_bind(scope);
+            if (!member->names) continue;
+            for (auto*name : *member->names) {
+                  if (!name) continue;
+                  relocate_bind_dimensions(name->index, scope);
+                  if (name->expr) name->expr->relocate_for_bind(scope);
+            }
+      }
+}
+
 type_identifier_t::type_identifier_t(PEIdent *identifier)
 : identifier_(identifier)
 {

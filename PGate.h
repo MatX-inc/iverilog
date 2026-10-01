@@ -209,6 +209,10 @@ class PGModule  : public PGate {
 
       ~PGModule() override;
 
+        // This is independent of bound_type_, which denotes nested modules.
+      void mark_bind_instance() { is_bind_instance_ = true; }
+
+
 	// Parameter overrides can come as an ordered list, or a set
 	// of named expressions.
       void set_parameters(std::list<PExpr*>*o);
@@ -225,6 +229,7 @@ class PGModule  : public PGate {
 
     private:
       Module*bound_type_;
+      bool is_bind_instance_ = false;
       perm_string type_;
       std::list<PExpr*>*overrides_;
       named_pexpr_t *pins_;

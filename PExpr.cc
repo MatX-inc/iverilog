@@ -25,6 +25,7 @@
 
 # include  "compiler.h"
 # include  "PExpr.h"
+# include  "pform.h"
 # include  "PPackage.h"
 # include  "PWire.h"
 # include  "Module.h"
@@ -45,6 +46,125 @@ PExpr::PExpr()
 
 PExpr::~PExpr()
 {
+}
+
+// Bind actuals are resolved in the target instance, with every declaration
+// in that module visible. Do not declare implicit nets in the directive's
+// compilation unit. Preserve file/line information for diagnostics.
+void PExpr::relocate_for_bind(LexicalScope*)
+{
+      lexical_pos(UINT_MAX);
+}
+
+static void relocate_bind_path(pform_name_t&path, LexicalScope*scope)
+{
+      for (auto&component : path) {
+            for (auto&index : component.index) {
+                  if (index.msb) index.msb->relocate_for_bind(scope);
+                  if (index.lsb) index.lsb->relocate_for_bind(scope);
+            }
+      }
+}
+
+void PEIdent::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (!path_.package && !path_.name.empty())
+            pform_check_bind_import(*this, scope, path_.name.front().name);
+      relocate_bind_path(path_.name, scope);
+}
+
+void PECallFunction::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (!path_.package && !path_.name.empty())
+            pform_check_bind_import(*this, scope, path_.name.front().name);
+      relocate_bind_path(path_.name, scope);
+      if (chain_prefix_) chain_prefix_->relocate_for_bind(scope);
+      if (with_expr_) with_expr_->relocate_for_bind(scope);
+      for (auto&parm : parms_)
+            if (parm.parm) parm.parm->relocate_for_bind(scope);
+}
+
+void PEAssignPattern::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      for (auto*parm : parms_)
+            if (parm) parm->relocate_for_bind(scope);
+}
+
+void PEConcat::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (repeat_) repeat_->relocate_for_bind(scope);
+      for (auto*parm : parms_)
+            if (parm) parm->relocate_for_bind(scope);
+}
+
+void PEEvent::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (expr_) expr_->relocate_for_bind(scope);
+}
+
+void PETypename::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (data_type_) data_type_->relocate_for_bind(scope);
+}
+
+void PEUnary::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (expr_) expr_->relocate_for_bind(scope);
+}
+
+void PEBinary::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (left_) left_->relocate_for_bind(scope);
+      if (right_) right_->relocate_for_bind(scope);
+}
+
+void PETernary::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (expr_) expr_->relocate_for_bind(scope);
+      if (tru_) tru_->relocate_for_bind(scope);
+      if (fal_) fal_->relocate_for_bind(scope);
+}
+
+void PECast::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (target_) target_->relocate_for_bind(scope);
+      if (base_) base_->relocate_for_bind(scope);
+}
+
+void PECastSign::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (base_) base_->relocate_for_bind(scope);
+}
+
+void PENewArray::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (size_) size_->relocate_for_bind(scope);
+      if (init_) init_->relocate_for_bind(scope);
+}
+
+void PENewClass::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      for (auto&parm : parms_)
+            if (parm.parm) parm.parm->relocate_for_bind(scope);
+}
+
+void PENewCopy::relocate_for_bind(LexicalScope*scope)
+{
+      PExpr::relocate_for_bind(scope);
+      if (src_) src_->relocate_for_bind(scope);
 }
 
 void PExpr::declare_implicit_nets(LexicalScope*, NetNet::Type)
