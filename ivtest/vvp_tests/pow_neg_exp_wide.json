@@ -1,0 +1,9 @@
+{
+    "type"          : "normal",
+    "source"        : "pow_neg_exp_wide.v",
+    "vlog95" : {
+        "__comment"     : "The power operator is not supported",
+        "type"          : "CE",
+        "iverilog-args" : [ "-pallowsigned=1" ]
+    }
+}
