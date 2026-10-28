@@ -5071,7 +5071,7 @@ static bool of_POW_base(vthread_t thr, bool signed_flag)
       if (signed_flag && yv2.value(yv2.size()-1)) {
 	    int a_val;
 	    vvp_bit4_t pad = BIT4_0, lsb = BIT4_0;
-	    if (vector2_to_value(xv2, a_val, true)) {
+	    if (vector2_to_small_value(xv2, a_val)) {
 		  if (a_val == 0) {
 			pad = BIT4_X; lsb = BIT4_X;
 		  }

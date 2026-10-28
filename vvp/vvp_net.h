@@ -575,6 +575,12 @@ extern bool vector4_to_value(const vvp_vector4_t&a, double&val, bool is_signed);
 
 extern bool vector2_to_value(const vvp_vector2_t&a, int32_t&val, bool is_signed);
 
+/*
+ * If the signed value of the vector is -1, 0 or 1, put it in val and
+ * return true. This works for a vector of any width.
+ */
+extern bool vector2_to_small_value(const vvp_vector2_t&a, int&val);
+
 extern vvp_vector4_t vector4_from_text(const char*bits, unsigned wid);
 
 inline vvp_vector4_t double_to_vector4_LSB(double real)

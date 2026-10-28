@@ -2284,6 +2284,24 @@ bool vector2_to_value(const vvp_vector2_t&a, int32_t&val, bool is_signed)
       return a.size() <= 32;
 }
 
+bool vector2_to_small_value(const vvp_vector2_t&a, int&val)
+{
+      int msb = a.value(a.size()-1);
+      for (unsigned idx = 1 ; idx < a.size() ; idx += 1) {
+	    if (a.value(idx) != msb) return false;
+      }
+
+      if (msb) {
+	      // All ones is -1. All ones except the LSB is -2.
+	    if (!a.value(0)) return false;
+	    val = -1;
+      } else {
+	    val = a.value(0);
+      }
+
+      return true;
+}
+
 vvp_vector4array_t::vvp_vector4array_t(unsigned width__, unsigned words__)
 : width_(width__), words_(words__)
 {

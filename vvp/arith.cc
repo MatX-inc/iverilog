@@ -493,7 +493,7 @@ void vvp_arith_pow::recv_vec4(vvp_net_ptr_t ptr, const vvp_vector4_t&bit,
       if (signed_flag_ && b2.value(b2.size()-1)) {
 	    int a_val;
 	    double r_val = 0.0;
-	    if (vector2_to_value(a2, a_val, true)) {
+	    if (vector2_to_small_value(a2, a_val)) {
 		  if (a_val == 0) {
 			ptr.ptr()->send_vec4(x_val_, 0);
 			return;
