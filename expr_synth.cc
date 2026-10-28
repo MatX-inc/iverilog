@@ -396,6 +396,11 @@ NetNet* NetEBPow::synthesize(Design*des, NetScope*scope, NetExpr*root)
       if (real_args) width = 1;
       else width = expr_width();
 
+	// A signed lpm_pwr object treats the base as signed, so zero
+	// extend an unsigned base by one bit to keep it positive.
+      if (!real_args && right_->has_sign() && !left_->has_sign())
+	    lsig = pad_to_width(des, lsig, lsig->vector_width()+1, *this);
+
       NetPow*powr = new NetPow(scope, scope->local_symbol(), width,
 			       lsig->vector_width(),
 			       rsig->vector_width());

@@ -125,13 +125,17 @@ static void draw_binary_vec4_arith(ivl_expr_t expr)
       int signed_flag = (ivl_expr_signed(le) || is_power_op) && ivl_expr_signed(re) ? 1 : 0;
       const char*signed_string = signed_flag? "/s" : "";
 
+	/* The %pow/s opcode treats the base as signed, so an unsigned base
+	   is zero extended by one bit and the result truncated afterwards. */
+      unsigned pow_pad = is_power_op && signed_flag && !ivl_expr_signed(le) ? 1 : 0;
+
 	/* All the arithmetic operations handled here (except for the power
 	   operation) require that the operands (and the result) be the same
 	   width. We further assume that the core has not given us an operand
 	   wider then the expression width. So pad operands as needed. */
       draw_eval_vec4(le);
-      if (lwid != ewid) {
-	    fprintf(vvp_out, "    %%pad/%c %u;\n", ivl_expr_signed(le)? 's' : 'u', ewid);
+      if (lwid != ewid + pow_pad) {
+	    fprintf(vvp_out, "    %%pad/%c %u;\n", ivl_expr_signed(le)? 's' : 'u', ewid + pow_pad);
       }
 
 	/* Special case: If the re expression can be collected into an
@@ -177,6 +181,8 @@ static void draw_binary_vec4_arith(ivl_expr_t expr)
 	    break;
 	  case 'p':
 	    fprintf(vvp_out, "    %%pow%s;\n", signed_string);
+	    if (pow_pad)
+		  fprintf(vvp_out, "    %%pad/u %u;\n", ewid);
 	    break;
 
 	  default:
