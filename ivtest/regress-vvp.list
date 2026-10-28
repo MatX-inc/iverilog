@@ -299,6 +299,7 @@ parameter_type			vvp_tests/parameter_type.json
 plusargs_dec_underscore		vvp_tests/plusargs_dec_underscore.json
 port_duplicate_after_empty_fail	vvp_tests/port_duplicate_after_empty_fail.json
 port_duplicate_empty_fail	vvp_tests/port_duplicate_empty_fail.json
+pow_neg_exp_unsigned		vvp_tests/pow_neg_exp_unsigned.json
 pow_neg_exp_wide		vvp_tests/pow_neg_exp_wide.json
 pr1388974			vvp_tests/pr1388974.json
 pr1701890			vvp_tests/pr1701890.json
